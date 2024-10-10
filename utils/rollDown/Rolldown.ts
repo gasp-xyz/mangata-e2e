@@ -324,6 +324,16 @@ export class Rolldown {
     );
   }
 
+  static async createForceManualBatch(
+    from: number,
+    to: number,
+    sequencer: any,
+    chain: ChainName = "Ethereum",
+  ) {
+    const api = await getApi();
+    return api.tx.rolldown.forceCreateBatch(chain, [from, to], sequencer);
+  }
+
   static async closeCancelOnL1(requestId: bigint, chainName = "Ethereum") {
     await closeL1Item(requestId, "close_cancel", chainName);
   }
@@ -375,7 +385,7 @@ export class Rolldown {
   }
 
   static async waitForL2UpdateExecuted(requestId: BN) {
-    await waitForAllEventsFromMatchingBlock(
+    const event = await waitForAllEventsFromMatchingBlock(
       getApi(),
       20,
       (ev) =>
@@ -384,6 +394,7 @@ export class Rolldown {
         (ev.data.toHuman() as any).requestId.toString() ===
           requestId.toString(),
     );
+    return event;
   }
 
   static async waitForNextBatchCreated(chain: string, blocksLimit = 25) {
@@ -500,6 +511,39 @@ export class Rolldown {
       testLog.getLog().info("L1 item ferried with tx", request);
       return getTransactionFees(txHash, publicClient);
     });
+  }
+
+  static async getL2RequestsBatchLast() {
+    let chain: ChainName;
+    let blockId: any;
+    let batchId: any;
+    let rangeFrom: any;
+    let rangeTo: any;
+    const l2RequestsBatchLast = JSON.parse(
+      JSON.stringify(await getApi().query.rolldown.l2RequestsBatchLast()),
+    );
+    if (l2RequestsBatchLast.Ethereum !== undefined) {
+      chain = "Ethereum";
+      blockId = l2RequestsBatchLast!.Ethereum[0];
+      batchId = l2RequestsBatchLast!.Ethereum[1];
+      rangeFrom = l2RequestsBatchLast!.Ethereum[2][0];
+      rangeTo = l2RequestsBatchLast!.Ethereum[2][1];
+    } else {
+      chain = "Arbitrum";
+      blockId = l2RequestsBatchLast!.Arbitrum[0];
+      batchId = l2RequestsBatchLast!.Arbitrum[1];
+      rangeFrom = l2RequestsBatchLast!.Arbitrum[2][0];
+      rangeTo = l2RequestsBatchLast!.Arbitrum[2][1];
+    }
+    return { chain, blockId, batchId, rangeFrom, rangeTo };
+  }
+
+  static async refundFailedDeposit(
+    requestId: number,
+    chain: ChainName = "Ethereum",
+  ) {
+    const api = await getApi();
+    return api.tx.rolldown.refundFailedDeposit(chain, requestId);
   }
 }
 export class L2Update {
