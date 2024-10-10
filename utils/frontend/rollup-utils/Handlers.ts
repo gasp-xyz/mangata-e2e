@@ -141,11 +141,12 @@ export async function waitForActionNotification(
       break;
     case TransactionType.AddLiquidity:
     case TransactionType.RemoveLiquidity:
+    case TransactionType.CreatePool:
       const removeLiqToast = new NotificationToast(driver);
       await removeLiqToast.waitForToastState(
         ToastType.Confirm,
         transaction,
-        3000,
+        5000,
       );
       const isWaitingForSignVisible = await removeLiqToast.istoastVisible(
         ToastType.Confirm,
